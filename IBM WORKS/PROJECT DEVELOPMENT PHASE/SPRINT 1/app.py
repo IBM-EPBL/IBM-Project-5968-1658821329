@@ -1,122 +1,164 @@
-from flask import Flask, render_template, request, redirect, url_for
-from flask_mail import Mail, Message
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
 
+This is a temporary script file.
+"""
+
+from flask import Flask, render_template, request, redirect, session 
+# from flask_mysqldb import MySQL
+# import MySQLdb.cursors
+import re
+
+from flask_db2 import DB2
 import ibm_db
+import ibm_db_dbi
+# from sendemail import sendgridmail,sendmail
 
-app = Flask(__name__, template_folder = 'templates')
-app.config['SECRET_KEY'] = 'top-secret!'
-app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'apikey'
-app.config['MAIL_PASSWORD'] = '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'
-app.config['MAIL_DEFAULT_SENDER'] = 'mohamedriyazafzal@gmail.com'
-mail = Mail(app)
+# from gevent.pywsgi import WSGIServer
+import os
 
-conn=ibm_db.connect("DATABASE=bludb;HOSTNAME=ba99a9e6-d59e-4883-8fc0-d6a8c9f7a08f.c1ogj3sd0tgtu0lqde00.databases.appdomain.cloud;PORT=31321;Security=SSL;SSLServerCertificate=DigiCertGlobalRootCA.crt;UID=zrx87241;PWD=uXYyT3xBNBdIBkTH;","","")
 
-@app.route('/', methods=['GET', 'POST'])
-def registration():
-    if request.method=='GET':
-        return render_template('registration.html')
-    if request.method=='POST':
-        email=request.form['email']
-        password=request.form['password']
-        wallet=request.form['wallet']
-        sql="INSERT INTO PETA_USER(EMAIL,PASSWORD,WALLET) VALUES(?,?,?)"
-        stmt=ibm_db.prepare(conn,sql)
-        ibm_db.bind_param(stmt,1,email)
-        ibm_db.bind_param(stmt,2,password)
-        ibm_db.bind_param(stmt,3,wallet)
+app = Flask(__name__)
+
+app.secret_key = 'a'
+  
+# app.config['MYSQL_HOST'] = 'remotemysql.com'
+# app.config['MYSQL_USER'] = 'D2DxDUPBii'
+# app.config['MYSQL_PASSWORD'] = 'r8XBO4GsMz'
+# app.config['MYSQL_DB'] = 'D2DxDUPBii'
+"""
+dsn_hostname = "55fbc997-9266-4331-afd3-888b05e734c0.bs2io90l08kqb1od8lcg.databases.appdomain.cloud"
+dsn_uid = "scs39301"
+dsn_pwd = "4pGriU46oCJtoSnD"
+dsn_driver = "{IBM DB2 ODBC DRIVER}"
+dsn_database = "bludb"
+dsn_port = "31929"
+dsn_protocol = "tcpip"
+
+dsn = (
+    "DRIVER={0};"
+    "DATABASE={1};"
+    "HOSTNAME={2};"
+    "PORT={3};"
+    "PROTOCOL={4};"
+    "UID={5};"
+    "PWD={6};"
+).format(dsn_driver, dsn_database, dsn_hostname, dsn_port, dsn_protocol, dsn_uid, dsn_pwd)
+"""
+# app.config['DB2_DRIVER'] = '{IBM DB2 ODBC DRIVER}'
+app.config['database'] = 'bludb'
+app.config['hostname'] = "55fbc997-9266-4331-afd3-888b05e734c0.bs2io90l08kqb1od8lcg.databases.appdomain.cloud"
+app.config['port'] = '31929'
+app.config['protocol'] = 'tcpip'
+app.config['uid'] = 'scs39301'
+app.config['pwd'] = '4pGriU46oCJtoSnD'
+app.config['security'] = 'SSL'
+try:
+    mysql = DB2(app)
+
+    conn_str='database=bludb;hostname=55fbc997-9266-4331-afd3-888b05e734c0.bs2io90l08kqb1od8lcg.databases.appdomain.cloud;port=31929;protocol=tcpip;\
+            uid=scs39301;pwd=4pGriU46oCJtoSnD;security=SSL'
+    ibm_db_conn = ibm_db.connect(conn_str,'','')
+        
+    print("Database connected without any error !!as user")
+except:
+    print("IBM DB Connection error   :     " + DB2.conn_errormsg())    
+
+# app.config['']
+
+# mysql = MySQL(app)
+
+
+#HOME--PAGE
+@app.route("/home")
+def home():
+    return render_template("homepage.html")
+
+@app.route("/")
+def add():
+    return render_template("home.html")
+
+
+
+#SIGN--UP--OR--REGISTER
+
+
+@app.route("/signup")
+def signup():
+    return render_template("signup.html")
+
+
+
+@app.route('/register', methods =['GET', 'POST'])
+def register():
+    msg = ''
+    print("Break point1")
+    if request.method == 'POST' :
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        print("Break point2" + "name: " + username + "------" + email + "------" + password)
+
+        try:
+            print("Break point3")
+            connectionID = ibm_db_dbi.connect(conn_str, '', '')
+            cursor = connectionID.cursor()
+            print("Break point4")
+        except:
+            print("No connection Established")      
+
+        # cursor = mysql.connection.cursor()
+        # with app.app_context():
+        #     print("Break point3")
+        #     cursor = ibm_db_conn.cursor()
+        #     print("Break point4")
+        
+        print("Break point5")
+        sql = "SELECT * FROM register WHERE username = ?"
+        stmt = ibm_db.prepare(ibm_db_conn, sql)
+        ibm_db.bind_param(stmt, 1, username)
         ibm_db.execute(stmt)
-        msg = Message('Registration Verfication',recipients=[email])
-        msg.body = ('Congratulations! Welcome user!')
-        msg.html = ('<h1>Registration Verfication</h1>'
-                    '<p>Congratulations! Welcome user!' 
-                    '<b>PETA</b>!</p>')
-        mail.send(msg)
-    return redirect(url_for('dashboard'))
-
-@app.route('/login',methods=['GET','POST'])
-def login():
-    if request.method=='POST':
-        email=request.form['email']
-        password=request.form['password']
-        sql="SELECT * FROM PETA_USER WHERE email=? AND password=?"
-        stmt=ibm_db.prepare(conn,sql)
-        ibm_db.bind_param(stmt,1,email)
-        ibm_db.bind_param(stmt,2,password)
-        ibm_db.execute(stmt)
-        account=ibm_db.fetch_assoc(stmt)
+        result = ibm_db.execute(stmt)
+        print(result)
+        account = ibm_db.fetch_row(stmt)
         print(account)
+
+        param = "SELECT * FROM register WHERE username = " + "\'" + username + "\'"
+        res = ibm_db.exec_immediate(ibm_db_conn, param)
+        print("---- ")
+        dictionary = ibm_db.fetch_assoc(res)
+        while dictionary != False:
+            print("The ID is : ", dictionary["USERNAME"])
+            dictionary = ibm_db.fetch_assoc(res)
+
+        # dictionary = ibm_db.fetch_assoc(result)
+        # cursor.execute(stmt)
+
+        # account = cursor.fetchone()
+        # print(account)
+
+        # while ibm_db.fetch_row(result) != False:
+        #     # account = ibm_db.result(stmt)
+        #     print(ibm_db.result(result, "username"))
+
+        # print(dictionary["username"])    
+        print("break point 6")
         if account:
-            return redirect(url_for('dashboard'))
+            msg = 'Username already exists !'
+        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+            msg = 'Invalid email address !'
+        elif not re.match(r'[A-Za-z0-9]+', username):
+            msg = 'name must contain only characters and numbers !'
         else:
-            return redirect(url_for('login'))
-    elif request.method=='GET':
-        return render_template('login.html')
-
-
-@app.route('/dashboard', methods=['GET'])
-def dashboard():
-    return render_template('dashboard.html')
-
-import ibm_db
-
-app = Flask(__name__, template_folder = 'templates')
-app.config['SECRET_KEY'] = 'top-secret!'
-app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'apikey'
-app.config['MAIL_PASSWORD'] = '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'
-app.config['MAIL_DEFAULT_SENDER'] = 'mohamedriyazafzal@gmail.com'
-mail = Mail(app)
-
-conn=ibm_db.connect("DATABASE=bludb;HOSTNAME=ba99a9e6-d59e-4883-8fc0-d6a8c9f7a08f.c1ogj3sd0tgtu0lqde00.databases.appdomain.cloud;PORT=31321;Security=SSL;SSLServerCertificate=DigiCertGlobalRootCA.crt;UID=zrx87241;PWD=uXYyT3xBNBdIBkTH;","","")
-
-@app.route('/', methods=['GET', 'POST'])
-def registration():
-    if request.method=='GET':
-        return render_template('registration.html')
-    if request.method=='POST':
-        email=request.form['email']
-        password=request.form['password']
-        wallet=request.form['wallet']
-        sql="INSERT INTO PETA_USER(EMAIL,PASSWORD,WALLET) VALUES(?,?,?)"
-        stmt=ibm_db.prepare(conn,sql)
-        ibm_db.bind_param(stmt,1,email)
-        ibm_db.bind_param(stmt,2,password)
-        ibm_db.bind_param(stmt,3,wallet)
-        ibm_db.execute(stmt)
-        msg = Message('Registration Verfication',recipients=[email])
-        msg.body = ('Congratulations! Welcome user!')
-        msg.html = ('<h1>Registration Verfication</h1>'
-                    '<p>Congratulations! Welcome user!' 
-                    '<b>PETA</b>!</p>')
-        mail.send(msg)
-    return redirect(url_for('dashboard'))
-
-@app.route('/login',methods=['GET','POST'])
-def login():
-    if request.method=='POST':
-        email=request.form['email']
-        password=request.form['password']
-        sql="SELECT * FROM PETA_USER WHERE email=? AND password=?"
-        stmt=ibm_db.prepare(conn,sql)
-        ibm_db.bind_param(stmt,1,email)
-        ibm_db.bind_param(stmt,2,password)
-        ibm_db.execute(stmt)
-        account=ibm_db.fetch_assoc(stmt)
-        print(account)
-        if account:
-            return redirect(url_for('dashboard'))
-        else:
-            return redirect(url_for('login'))
-    elif request.method=='GET':
-        return render_template('login.html')
-
-
-@app.route('/dashboard', methods=['GET'])
-def dashboard():
-    return render_template('dashboard.html')
+            sql2 = "INSERT INTO register (username, email,password) VALUES (?, ?, ?)"
+            stmt2 = ibm_db.prepare(ibm_db_conn, sql2)
+            ibm_db.bind_param(stmt2, 1, username)
+            ibm_db.bind_param(stmt2, 2, email)
+            ibm_db.bind_param(stmt2, 3, password)
+            ibm_db.execute(stmt2)
+            # cursor.execute('INSERT INTO register VALUES (NULL, % s, % s, % s)', (username, email,password))
+            # mysql.connection.commit()
+            msg = 'You have successfully registered !'
+        return render_template('signup.html', msg = msg)
