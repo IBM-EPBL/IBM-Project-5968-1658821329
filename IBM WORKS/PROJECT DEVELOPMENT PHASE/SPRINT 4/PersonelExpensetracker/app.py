@@ -18,8 +18,8 @@ from sendemail import sendgridmail,sendmail
 # from gevent.pywsgi import WSGIServer
 import os
 
-
 app = Flask(__name__)
+
 
 app.secret_key = 'a'
   
@@ -57,8 +57,8 @@ app.config['security'] = 'SSL'
 try:
     mysql = DB2(app)
 
-    conn_str='database=bludb;hostname=55fbc997-9266-4331-afd3-888b05e734c0.bs2io90l08kqb1od8lcg.databases.appdomain.cloud;port=31929;protocol=tcpip;\
-            uid=scs39301;pwd=4pGriU46oCJtoSnD;security=SSL'
+    conn_str='DATABASE=bludb;HOSTNAME=55fbc997-9266-4331-afd3-888b05e734c0.bs2io90l08kqb1od8lcg.databases.appdomain.cloud;PORT=31929;PROTOCOL=tcpip;\
+            UID=scs39301;PWD=4pGriU46oCJtoSnD;security=SSL'
     ibm_db_conn = ibm_db.connect(conn_str,'','')
         
     print("Database connected without any error !!")
