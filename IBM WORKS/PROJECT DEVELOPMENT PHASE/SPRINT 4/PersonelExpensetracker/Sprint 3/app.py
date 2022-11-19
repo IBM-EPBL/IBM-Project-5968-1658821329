@@ -180,7 +180,7 @@ def addexpense():
     if(total>limit[0]):
         
         
-        mail_from = '19i304@psgtech.ac.in'
+        mail_from =  'tusharrravindran@gmail.com'
         mail_to = session['email']
 
         msg = MIMEMultipart()
@@ -196,7 +196,7 @@ def addexpense():
         try:
             server = smtplib.SMTP_SSL('smtp.sendgrid.net', 465)
             server.ehlo()
-            server.login('apikey', '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')
+            server.login('apikey', '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')
             server.sendmail(mail_from, mail_to, msg.as_string())
             server.close()
             print("mail sent")
